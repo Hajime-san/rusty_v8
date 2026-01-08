@@ -1,7 +1,7 @@
 #[test]
 fn platform_custom_time_callback() {
-  extern "C" fn mock_time_callback() -> f64 {
-    1767865796917.0 // 2026/01/08 18:49:56
+  extern "C" fn mock_time_callback() -> i64 {
+    1767874994525685
   }
 
   let platform =
@@ -21,9 +21,13 @@ fn platform_custom_time_callback() {
       throw a + " does not equal " + b;
     }
 
-    const now = Temporal.Now.instant().epochMilliseconds;
+    const nanos = Temporal.Now.instant().epochNanoseconds;
 
-    assertEquals(now, 1767865796917);
+    assertEquals(nanos, 1767874994525685000000n);
+
+    const millis = Temporal.Now.instant().epochMilliseconds;
+
+    assertEquals(millis, 1767874994525685);
   "#;
   let source = v8::String::new(scope, source).unwrap();
   let script = v8::Script::compile(scope, source, None).unwrap();

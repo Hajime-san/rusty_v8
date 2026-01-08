@@ -25,7 +25,7 @@ unsafe extern "C" {
   fn v8__Platform__NewCustomPlatform(
     thread_pool_size: int,
     idle_task_support: bool,
-    current_clock_time_milliseconds_high_resolution_callback: extern "C" fn() -> f64,
+    current_clock_time_milliseconds_high_resolution_callback: CurrentClockTimeHighResolutionCallback,
   ) -> *mut Platform;
   fn v8__Platform__DELETE(this: *mut Platform);
 
@@ -92,7 +92,7 @@ pub fn new_default_platform(
 }
 
 /// Function pointer type for high resolution time callback
-pub type CurrentClockTimeHighResolutionCallback = extern "C" fn() -> f64;
+pub type CurrentClockTimeHighResolutionCallback = extern "C" fn() -> i64;
 
 #[inline(always)]
 pub fn new_default_platform_with_time_callback(

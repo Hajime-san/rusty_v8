@@ -3005,27 +3005,27 @@ void v8__Platform__NotifyIsolateShutdown(v8::Platform* platform,
 // Custom platform implementation that allows Rust callbacks
 class CustomPlatform : public v8::platform::DefaultPlatform {
  private:
-  double (*host_defined_current_clock_time_milliseconds_high_resolution)(void*);
+  int64_t (*host_defined_current_clock_time_nanoseconds)(void*);
 
  public:
   CustomPlatform(int thread_pool_size,
                  v8::platform::IdleTaskSupport idle_task_support,
-                 double (*callback)(void*))
+                 int64_t (*callback)(void*))
       : v8::platform::DefaultPlatform(thread_pool_size, idle_task_support),
-        host_defined_current_clock_time_milliseconds_high_resolution(callback) {}
+        host_defined_current_clock_time_nanoseconds(callback) {}
 
-  double CurrentClockTimeMillisecondsHighResolution() override {
-    if (host_defined_current_clock_time_milliseconds_high_resolution) {
-      return host_defined_current_clock_time_milliseconds_high_resolution(nullptr);
+  int64_t CurrentClockTimeNanoseconds() override {
+    if (host_defined_current_clock_time_nanoseconds) {
+      return host_defined_current_clock_time_nanoseconds(nullptr);
     }
-    return v8::platform::DefaultPlatform::CurrentClockTimeMillisecondsHighResolution();
+    return v8::platform::DefaultPlatform::CurrentClockTimeNanoseconds();
   }
 };
 
 v8::Platform* v8__Platform__NewCustomPlatform(
     int thread_pool_size,
     bool idle_task_support,
-    double (*current_clock_time_milliseconds_high_resolution_callback)(void*)
+    int64_t (*current_clock_time_milliseconds_high_resolution_callback)(void*)
 ) {
   auto idle_support = idle_task_support 
     ? v8::platform::IdleTaskSupport::kEnabled
