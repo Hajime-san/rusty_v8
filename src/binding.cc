@@ -3002,6 +3002,42 @@ void v8__Platform__NotifyIsolateShutdown(v8::Platform* platform,
   v8::platform::NotifyIsolateShutdown(platform, isolate);
 }
 
+// Custom platform implementation that allows Rust callbacks
+class CustomPlatform : public v8::platform::DefaultPlatform {
+ private:
+  double (*host_defined_current_clock_time_milliseconds_high_resolution)(void*);
+
+ public:
+  CustomPlatform(int thread_pool_size,
+                 v8::platform::IdleTaskSupport idle_task_support,
+                 double (*callback)(void*))
+      : v8::platform::DefaultPlatform(thread_pool_size, idle_task_support),
+        host_defined_current_clock_time_milliseconds_high_resolution(callback) {}
+
+  double CurrentClockTimeMillisecondsHighResolution() override {
+    if (host_defined_current_clock_time_milliseconds_high_resolution) {
+      return host_defined_current_clock_time_milliseconds_high_resolution(nullptr);
+    }
+    return v8::platform::DefaultPlatform::CurrentClockTimeMillisecondsHighResolution();
+  }
+};
+
+v8::Platform* v8__Platform__NewCustomPlatform(
+    int thread_pool_size,
+    bool idle_task_support,
+    double (*current_clock_time_milliseconds_high_resolution_callback)(void*)
+) {
+  auto idle_support = idle_task_support 
+    ? v8::platform::IdleTaskSupport::kEnabled
+    : v8::platform::IdleTaskSupport::kDisabled;
+  
+  return new CustomPlatform(
+    thread_pool_size,
+    idle_support,
+    current_clock_time_milliseconds_high_resolution_callback
+  );
+}
+
 void v8__Platform__DELETE(v8::Platform* self) { delete self; }
 
 two_pointers_t std__shared_ptr__v8__Platform__CONVERT__std__unique_ptr(

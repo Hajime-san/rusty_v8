@@ -22,6 +22,11 @@ unsafe extern "C" {
   fn v8__Platform__NewSingleThreadedDefaultPlatform(
     idle_task_support: bool,
   ) -> *mut Platform;
+  fn v8__Platform__NewCustomPlatform(
+    thread_pool_size: int,
+    idle_task_support: bool,
+    current_clock_time_milliseconds_high_resolution_callback: extern "C" fn() -> f64,
+  ) -> *mut Platform;
   fn v8__Platform__DELETE(this: *mut Platform);
 
   fn v8__Platform__PumpMessageLoop(
@@ -86,6 +91,22 @@ pub fn new_default_platform(
   Platform::new(thread_pool_size, idle_task_support)
 }
 
+/// Function pointer type for high resolution time callback
+pub type CurrentClockTimeHighResolutionCallback = extern "C" fn() -> f64;
+
+#[inline(always)]
+pub fn new_default_platform_with_time_callback(
+  thread_pool_size: u32,
+  idle_task_support: bool,
+  current_time_callback: CurrentClockTimeHighResolutionCallback,
+) -> UniqueRef<Platform> {
+  Platform::new_with_optional_time_callback(
+    thread_pool_size,
+    idle_task_support,
+    Some(current_time_callback),
+  )
+}
+
 /// Creates a platform that is identical to the default platform, but does not
 /// enforce thread-isolated allocations. This may reduce security in some cases,
 /// so this method should be used with caution in cases where the threading
@@ -140,6 +161,29 @@ impl Platform {
         thread_pool_size.min(16) as i32,
         idle_task_support,
       ))
+    }
+  }
+
+  #[inline(always)]
+  pub fn new_with_optional_time_callback(
+    thread_pool_size: u32,
+    idle_task_support: bool,
+    current_time_callback: Option<CurrentClockTimeHighResolutionCallback>,
+  ) -> UniqueRef<Self> {
+    match current_time_callback {
+      Some(callback) => unsafe {
+        UniqueRef::from_raw(v8__Platform__NewCustomPlatform(
+          thread_pool_size.min(16) as i32,
+          idle_task_support,
+          callback,
+        ))
+      },
+      None => unsafe {
+        UniqueRef::from_raw(v8__Platform__NewDefaultPlatform(
+          thread_pool_size.min(16) as i32,
+          idle_task_support,
+        ))
+      },
     }
   }
 
